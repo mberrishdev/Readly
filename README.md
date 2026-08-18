@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Design/Icon/readly-icon-indigo-1024.png" width="96" alt="Readly icon" />
+  <img src="docs/assets/app-icon.png" width="96" alt="Readly icon" />
   <h1 align="center">Readly</h1>
 </p>
 

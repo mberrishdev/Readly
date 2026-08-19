@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// The dimmed, crosshaired drag surface for one screen. Reports back in its
 /// own bounds space (bottom-left origin, y-up) — `SelectionOverlayController`
@@ -11,6 +12,7 @@ final class SelectionView: NSView {
 
   private var dragOrigin: CGPoint?
   private var currentRect: CGRect = .zero
+  private var glowHostingView: NSHostingView<SelectionGlowView>?
 
   override var acceptsFirstResponder: Bool { true }
 
@@ -35,6 +37,7 @@ final class SelectionView: NSView {
       height: abs(point.y - dragOrigin.y)
     )
     needsDisplay = true
+    updateGlow(for: currentRect)
   }
 
   override func mouseUp(with event: NSEvent) {
@@ -42,6 +45,7 @@ final class SelectionView: NSView {
     let result = currentRect
     currentRect = .zero
     needsDisplay = true
+    removeGlow()
     onSelectionCompleted?(result)
   }
 
@@ -63,9 +67,31 @@ final class SelectionView: NSView {
     NSRect(x: bounds.minX, y: hole.minY, width: hole.minX - bounds.minX, height: hole.height).fill()
     NSRect(x: hole.maxX, y: hole.minY, width: bounds.maxX - hole.maxX, height: hole.height).fill()
 
-    NSColor.white.setStroke()
-    let outline = NSBezierPath(rect: hole.insetBy(dx: 0.5, dy: 0.5))
-    outline.lineWidth = 1
-    outline.stroke()
+    // The border itself is drawn by `glowHostingView`'s Metal shader, not
+    // here — a plain stroke would sit visually flat underneath its glow.
+  }
+
+  /// Creates the glow view on first use, sized with padding so the shader's
+  /// outward samples (up to 9pt, see `SelectionGlow.metal`) have room to
+  /// render without clipping at the hosting view's own edge.
+  private func updateGlow(for rect: CGRect) {
+    let padding: CGFloat = 14
+    let frame = rect.insetBy(dx: -padding, dy: -padding)
+
+    let hostingView: NSHostingView<SelectionGlowView>
+    if let existing = glowHostingView {
+      hostingView = existing
+    } else {
+      hostingView = NSHostingView(rootView: SelectionGlowView(padding: padding))
+      hostingView.layer?.backgroundColor = .clear
+      addSubview(hostingView)
+      glowHostingView = hostingView
+    }
+    hostingView.frame = frame
+  }
+
+  private func removeGlow() {
+    glowHostingView?.removeFromSuperview()
+    glowHostingView = nil
   }
 }

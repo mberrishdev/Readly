@@ -1,6 +1,7 @@
 # Build output
 dist/
 *.dmg
+scripts/.sparkle-tools/
 
 # Xcode
 xcuserdata/

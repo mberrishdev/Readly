@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		19801317467916552B26C1B2 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = F085DCBDFBFF1C20212C8A7C /* KeyboardShortcuts */; };
+		81511ED01458A9AC66B822A8 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 399F1A540A33C80A31E0C530 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,6 +26,16 @@
 		E49D46F211FD4ED36510DBC8 /* Readly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Readly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		714A0A6F52044A2A633CCE3D /* Exceptions for "Readly" folder in "Readly" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 10A7A8EE265F4C2AF19E313A /* Readly */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4CCA2BB13493783F103C1111 /* ReadlyTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -33,6 +44,9 @@
 		};
 		A28E6E5B8D035805D4CB36F4 /* Readly */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				714A0A6F52044A2A633CCE3D /* Exceptions for "Readly" folder in "Readly" target */,
+			);
 			path = Readly;
 			sourceTree = "<group>";
 		};
@@ -51,6 +65,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				19801317467916552B26C1B2 /* KeyboardShortcuts in Frameworks */,
+				81511ED01458A9AC66B822A8 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +134,7 @@
 			name = Readly;
 			packageProductDependencies = (
 				F085DCBDFBFF1C20212C8A7C /* KeyboardShortcuts */,
+				399F1A540A33C80A31E0C530 /* Sparkle */,
 			);
 			productName = Readly;
 			productReference = E49D46F211FD4ED36510DBC8 /* Readly.app */;
@@ -154,6 +170,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				47BAF426599D80CE1C25108F /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				E8C9936D5D53D0B98490E25A /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A7C41DC61B7BE44CEEC569E0 /* Products */;
@@ -223,6 +240,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Readly/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -324,6 +342,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Readly/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -489,9 +508,22 @@
 				minimumVersion = 2.3.0;
 			};
 		};
+		E8C9936D5D53D0B98490E25A /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		399F1A540A33C80A31E0C530 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E8C9936D5D53D0B98490E25A /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
 		F085DCBDFBFF1C20212C8A7C /* KeyboardShortcuts */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 47BAF426599D80CE1C25108F /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;

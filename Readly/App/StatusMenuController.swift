@@ -74,6 +74,19 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     updatesItem.target = self
     menu.addItem(updatesItem)
 
+    menu.addItem(.separator())
+
+    // Disabled and unclickable — same convention as most menu bar apps'
+    // version line, using the same `UpdatesSettingsView.version` string
+    // Settings shows, so there's one source of truth for the format.
+    let versionItem = NSMenuItem(
+      title: "Version \(UpdatesSettingsView.version)",
+      action: nil,
+      keyEquivalent: ""
+    )
+    versionItem.isEnabled = false
+    menu.addItem(versionItem)
+
     menu.addItem(NSMenuItem(
       title: "Quit Readly",
       action: #selector(NSApplication.terminate(_:)),

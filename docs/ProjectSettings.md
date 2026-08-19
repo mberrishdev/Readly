@@ -21,10 +21,23 @@ removing a Swift file under `Readly/` or `ReadlyTests/` never touches
   `CGPreflightScreenCaptureAccess`/`CGRequestScreenCaptureAccess`, which
   (unlike camera or microphone) needs no `Info.plist` string; the system
   supplies the TCC prompt's text itself
-- No `Info.plist` file in the target at all — every key above is generated
-  from `INFOPLIST_KEY_*` build settings (`GENERATE_INFOPLIST_FILE = YES`)
-- No Sparkle / update feed yet — distribution is manual `dist/*.dmg` builds
-  for now (see the README's Roadmap)
+- Every key above is generated from `INFOPLIST_KEY_*` build settings
+  (`GENERATE_INFOPLIST_FILE = YES`); `Readly/Info.plist` still exists and is
+  merged in (`INFOPLIST_FILE = Readly/Info.plist`), but only for the three
+  Sparkle keys below — `INFOPLIST_KEY_` passthrough silently drops keys
+  Xcode doesn't recognize, and Sparkle reads `SUPublicEDKey` straight from
+  the bundle. It's excluded from the target's synchronized-group membership
+  (`PBXFileSystemSynchronizedBuildFileExceptionSet`) so it's merged as the
+  Info.plist source rather than copied into the bundle as a stray resource.
+- `SUFeedURL` = `https://raw.githubusercontent.com/mberrishdev/Readly/main/appcast.xml`
+  — Readly's own signed release feed, fetched by the linked Sparkle
+  framework (see `appcast.xml` at the repo root)
+- `SUPublicEDKey` = the EdDSA public key from
+  `scripts/generate-sparkle-keys.sh`; empty until that's been run once —
+  `SparkleUpdaterService.start()` treats an empty key as "not set up yet"
+  and simply doesn't start, rather than Sparkle failing loudly
+- `SUEnableAutomaticChecks` = true (default; user-toggleable in Settings via
+  `SparkleUpdaterService.automaticallyChecksForUpdates`)
 
 ## Entitlements (`Readly.entitlements`)
 

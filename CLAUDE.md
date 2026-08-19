@@ -36,11 +36,13 @@ decision it records without saying so.
 - SwiftUI for windowed UI (Settings, onboarding), hosted in the AppKit shell
 - ScreenCaptureKit for capture, Vision for OCR — both first-party, no model
   or capture library swapped in
-- Exactly one third-party dependency: `KeyboardShortcuts`, for the
-  rebindable global hotkey. Adding a second is a decision to raise, not to
-  make.
+- Two third-party dependencies, and no plan for a third without raising it
+  first: `KeyboardShortcuts` (the rebindable global hotkey) and `Sparkle`
+  (self-updates, wrapped so nothing outside `Readly/Updates/` imports it)
 - Scaffolding values (bundle ID, entitlements, signing, Info.plist keys):
   [`docs/ProjectSettings.md`](docs/ProjectSettings.md)
+- Releases are cut with `scripts/release.sh <version>` — see its header
+  comment; one-time setup is `scripts/generate-sparkle-keys.sh`
 
 ## Build and test
 

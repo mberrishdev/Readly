@@ -36,6 +36,21 @@ nothing is ever uploaded anywhere.
 
 ## Install
 
+No release has been cut yet (see `scripts/release.sh`), so these don't have
+anything to fetch until the first tag ships — build from source below in the
+meantime.
+
+With Homebrew:
+
+```bash
+brew tap mberrishdev/readly https://github.com/mberrishdev/Readly
+brew trust --tap mberrishdev/readly
+brew install --cask readly
+```
+
+Or grab [**Readly.dmg**](https://github.com/mberrishdev/Readly/releases/latest/download/Readly.dmg)
+from the latest release.
+
 Build from source:
 
 ```bash
@@ -79,6 +94,13 @@ macOS may show **two** dialogs — approve both:
    through the system's window picker (Readly's own selection overlay
    replaces that picker)
 
+## Updates
+
+Readly checks a static [`appcast.xml`](appcast.xml) once a day via Sparkle
+and verifies every update's EdDSA signature before installing it — no
+backend involved. Toggle automatic checks and downloads, or check manually,
+in **Settings → Updates**.
+
 ## Architecture
 
 Readly is a pipeline, not an app with screens:
@@ -97,6 +119,8 @@ service it calls in order.
 - `Services/` — hotkey, capture (ScreenCaptureKit), OCR (Vision), output
   (clipboard + HUD), permissions
 - `Settings/` — the settings window and its preferences store
+- `Updates/` — `SparkleUpdaterService`, wrapping Sparkle so nothing else
+  imports it
 - `ReadlyTests/` — coordinate math and flow/re-entrancy rules, pinned with
   Swift Testing
 

@@ -64,9 +64,13 @@ else.
   `OutputServicing`, `PermissionsManaging`, `HotkeySourcing`) so
   `CaptureCoordinator` can be tested against a mock, and so Vision or
   ScreenCaptureKit could be swapped later without touching flow logic.
-- **Exactly one third-party dependency:** `KeyboardShortcuts` (Sindre
-  Sorhus), for the rebindable global hotkey. Adding a second is a decision
-  to raise, not to make.
+- **Two third-party dependencies, and no plan for a third without raising
+  it first:** `KeyboardShortcuts` (Sindre Sorhus), for the rebindable global
+  hotkey, and `Sparkle`, for self-updates.
+- **Updates are a static file, not a server.** Readly ships no backend;
+  `appcast.xml` at the repo root is the whole update feed, and
+  `scripts/release.sh` is what keeps it, `Casks/readly.rb`, and the GitHub
+  release in sync on every cut.
 - Scaffolding values (bundle ID, entitlements, signing, Info.plist keys):
   [`docs/ProjectSettings.md`](docs/ProjectSettings.md)
 
@@ -83,6 +87,8 @@ else.
   and the confirmation toast), `PermissionsManager`.
 - `Readly/Settings/` — the settings window, its `SettingsStore`, and the
   reusable card/row design system under `Components/`.
+- `Readly/Updates/` — `SparkleUpdaterService`, wrapping Sparkle so nothing
+  else in the app imports it.
 
 ## Where to put a test
 
@@ -98,4 +104,7 @@ to move the rule into the reducer and test that, not to mock the world.
 - Capture history
 - Table detection → paste as CSV
 - Translate after capture
-- Real code signing + notarization once distribution is actually planned
+- Real code signing + notarization once distribution is actually planned —
+  Sparkle updates and the Homebrew cask both already work ad-hoc signed, but
+  a first launch from a fresh download still shows Gatekeeper's "damaged"
+  message until then

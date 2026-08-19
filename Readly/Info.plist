@@ -9,12 +9,11 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/mberrishdev/Readly/main/appcast.xml</string>
 	<!-- Public half of the EdDSA signing key, printed by
-	     scripts/generate-sparkle-keys.sh. Empty until that script has been
-	     run once — Sparkle just declines to start until it's filled in,
-	     rather than failing loudly, so an empty value here is safe during
-	     early development. -->
+	     scripts/generate-sparkle-keys.sh. The matching private key lives in
+	     the login Keychain on the machine that ran that script and is never
+	     committed here. -->
 	<key>SUPublicEDKey</key>
-	<string></string>
+	<string>fJ+7Z3yZBPNXBJd6ogkoh34ZsbMAiawDZbeF5H47M4A=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<!-- Once a day. Readly is a menu-bar app people leave running for weeks,

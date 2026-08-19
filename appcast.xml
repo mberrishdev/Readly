@@ -15,6 +15,16 @@
     <language>en</language>
     <!-- scripts/release.sh inserts new <item> entries directly below this line, newest first -->
     <item>
+      <title>Readly 0.1.0</title>
+      <pubDate>Wed, 19 Aug 2026 11:17:12 +0000</pubDate>
+      <sparkle:version>32</sparkle:version>
+      <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+      <enclosure
+        url="https://github.com/mberrishdev/Readly/releases/download/v0.1.0/Readly-0.1.0.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="3qC2sbTlhncWiGu4PIda7B7hKHmJcQW4Kk9ybxnIWHWcICsOsg4cyMLiAsIs/FxeI5/SPXhxP053Z34A95q4AQ==" length="1608852" />
+    </item>
+    <item>
       <title>Readly 0.0.1</title>
       <pubDate>Wed, 19 Aug 2026 11:05:47 +0000</pubDate>
       <sparkle:version>29</sparkle:version>

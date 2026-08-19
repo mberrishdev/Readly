@@ -1,0 +1,272 @@
+#!/bin/bash
+#
+# Cuts a Readly release: bumps the version, archives Release, packages a DMG,
+# and publishes a GitHub release with the DMG attached.
+#
+#   scripts/release.sh 0.2.0            # build, tag, and publish
+#   scripts/release.sh 0.2.0 --dry-run  # build and package only, publish nothing
+#
+# Readly has no Developer ID yet, so the app is ad-hoc signed rather than
+# notarized: Gatekeeper will show "damaged and can't be opened" on first
+# launch, bypassed with `xattr -cr` (NOT the right-click -> Open trick,
+# which only works for the older "unidentified developer" message). This
+# also EdDSA-signs the DMG with scripts/generate-sparkle-keys.sh's
+# Keychain-stored key, prepends a new <item> to appcast.xml so Readly's own
+# Sparkle updater can find the release, and bumps Casks/readly.rb's
+# version/sha256 for the Homebrew tap.
+#
+# Unlike some sibling projects, Readly.xcodeproj is hand-authored and
+# committed directly (no xcodegen, no project.yml — see
+# docs/ProjectSettings.md), so the version bump below edits
+# project.pbxproj's MARKETING_VERSION/CURRENT_PROJECT_VERSION entries
+# directly rather than regenerating the project from a template.
+
+set -euo pipefail
+
+VERSION="${1:-}"
+DRY_RUN=false
+[[ "${2:-}" == "--dry-run" ]] && DRY_RUN=true
+
+if [[ -z "$VERSION" ]]; then
+  echo "usage: scripts/release.sh <version> [--dry-run]" >&2
+  exit 1
+fi
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "version must be semver, e.g. 0.2.0 (got '$VERSION')" >&2
+  exit 1
+fi
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+TAG="v$VERSION"
+BUILD_DIR="$REPO_ROOT/.build/release"
+ARCHIVE="$BUILD_DIR/Readly.xcarchive"
+EXPORT_DIR="$BUILD_DIR/export"
+STAGE_DIR="$BUILD_DIR/dmg"
+DMG="$BUILD_DIR/Readly-$VERSION.dmg"
+PBXPROJ="Readly.xcodeproj/project.pbxproj"
+
+step() { printf '\n\033[1;33m▸ %s\033[0m\n' "$1"; }
+fail() { printf '\033[1;31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
+
+# ---------------------------------------------------------------- preflight
+
+step "Preflight"
+command -v xcodebuild >/dev/null || fail "xcodebuild not found"
+command -v hdiutil >/dev/null || fail "hdiutil not found"
+SIGN_UPDATE="$REPO_ROOT/scripts/.sparkle-tools/bin/sign_update"
+[[ -x "$SIGN_UPDATE" ]] || fail "sign_update not found — run scripts/generate-sparkle-keys.sh first"
+if ! $DRY_RUN; then
+  command -v gh >/dev/null || fail "gh not found — install the GitHub CLI"
+  gh auth status >/dev/null 2>&1 || fail "gh is not authenticated — run 'gh auth login'"
+fi
+
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+if [[ "$CURRENT_BRANCH" != "main" ]] && ! $DRY_RUN; then
+  fail "releases are cut from main (on '$CURRENT_BRANCH')"
+fi
+if [[ -n "$(git status --porcelain)" ]] && ! $DRY_RUN; then
+  fail "working tree is dirty — commit or stash first"
+fi
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+  fail "tag $TAG already exists"
+fi
+echo "  version $VERSION, tag $TAG, branch $CURRENT_BRANCH"
+
+# ------------------------------------------------------------------- tests
+
+step "Tests"
+xcodebuild test \
+  -project Readly.xcodeproj \
+  -scheme Readly \
+  -destination 'platform=macOS' \
+  CODE_SIGNING_ALLOWED=NO \
+  -quiet
+echo "  suite passed"
+
+# ------------------------------------------------------------------- build
+
+if $DRY_RUN; then
+  step "Skipping the version bump (dry run)"
+else
+  step "Setting version to $VERSION"
+  # project.pbxproj is the source of truth — it's committed directly, not
+  # generated — so every MARKETING_VERSION/CURRENT_PROJECT_VERSION entry in
+  # it (app and test target, Debug and Release alike) is edited in place.
+  BUILD_NUMBER="$(git rev-list --count HEAD)"
+  /usr/bin/sed -i '' \
+    -e "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" \
+    -e "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" \
+    "$PBXPROJ"
+
+  # Every configuration must agree, or Debug and Release disagree about what
+  # version is running.
+  STRAY="$(grep -c "MARKETING_VERSION = $VERSION;" "$PBXPROJ" || true)"
+  TOTAL="$(grep -c "MARKETING_VERSION = " "$PBXPROJ" || true)"
+  [[ "$STRAY" == "$TOTAL" ]] || fail "only $STRAY of $TOTAL MARKETING_VERSION entries became $VERSION"
+  echo "  marketing $VERSION, build $BUILD_NUMBER ($TOTAL configurations)"
+fi
+
+step "Archiving Release"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+xcodebuild archive \
+  -project Readly.xcodeproj \
+  -scheme Readly \
+  -configuration Release \
+  -archivePath "$ARCHIVE" \
+  -destination 'generic/platform=macOS' \
+  CODE_SIGNING_ALLOWED=NO \
+  -quiet
+
+APP_IN_ARCHIVE="$ARCHIVE/Products/Applications/Readly.app"
+[[ -d "$APP_IN_ARCHIVE" ]] || fail "archive has no Readly.app"
+
+mkdir -p "$EXPORT_DIR"
+cp -R "$APP_IN_ARCHIVE" "$EXPORT_DIR/Readly.app"
+APP="$EXPORT_DIR/Readly.app"
+echo "  archived $(du -sh "$APP" | cut -f1)"
+
+if ! $DRY_RUN; then
+  BUILT_SHORT="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+    "$APP/Contents/Info.plist" 2>/dev/null || echo "")"
+  BUILT_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" \
+    "$APP/Contents/Info.plist" 2>/dev/null || echo "")"
+  [[ "$BUILT_SHORT" == "$VERSION" ]] \
+    || fail "the built app reports version '$BUILT_SHORT', not $VERSION"
+  echo "  reports $BUILT_SHORT ($BUILT_BUILD)"
+fi
+
+# Ad-hoc sign if the archive came out unsigned, so Gatekeeper's message is
+# "unidentified developer" rather than "damaged". Readly has no Developer ID
+# yet — this is the whole signing story for now.
+if ! codesign -dv "$APP" >/dev/null 2>&1; then
+  step "Ad-hoc signing (no Developer ID in this build)"
+  codesign --force --deep --sign - "$APP"
+fi
+codesign -dv "$APP" 2>&1 | grep -E "Authority|Signature" | sed 's/^/  /' || true
+
+# --------------------------------------------------------------------- dmg
+
+step "Packaging DMG"
+rm -rf "$STAGE_DIR" "$DMG"
+mkdir -p "$STAGE_DIR"
+cp -R "$APP" "$STAGE_DIR/Readly.app"
+ln -s /Applications "$STAGE_DIR/Applications"
+# hdiutil reports "Resource busy" if the freshly copied bundle is still being
+# indexed, so give it a few attempts.
+for attempt in 1 2 3 4 5; do
+  if hdiutil create \
+      -volname "Readly $VERSION" \
+      -srcfolder "$STAGE_DIR" \
+      -ov -format UDZO \
+      "$DMG" >/dev/null 2>&1; then
+    break
+  fi
+  [[ $attempt == 5 ]] && fail "hdiutil could not create the DMG"
+  echo "  hdiutil busy, retrying ($attempt)"
+  sleep 3
+done
+hdiutil verify "$DMG" >/dev/null 2>&1 || fail "the DMG failed verification"
+
+SHA="$(shasum -a 256 "$DMG" | cut -d' ' -f1)"
+echo "  $DMG ($(du -h "$DMG" | cut -f1))"
+echo "  sha256 $SHA"
+
+step "Signing the update for Sparkle"
+SIGNATURE_ATTRS="$("$SIGN_UPDATE" "$DMG")"
+echo "  $SIGNATURE_ATTRS"
+
+if $DRY_RUN; then
+  step "Dry run — nothing published"
+  echo "  DMG: $DMG"
+  echo "  version bump not written (dry run) — project.pbxproj is untouched"
+  echo "  appcast.xml not updated (dry run)"
+  echo "  Casks/readly.rb not updated (dry run)"
+  exit 0
+fi
+
+step "Updating Casks/readly.rb"
+/usr/bin/sed -i '' \
+  -e "s/^\([[:space:]]*\)version \".*\"$/\1version \"$VERSION\"/" \
+  -e "s/^\([[:space:]]*\)sha256 \".*\"$/\1sha256 \"$SHA\"/" \
+  Casks/readly.rb
+echo "  version $VERSION, sha256 $SHA"
+
+step "Adding $VERSION to appcast.xml"
+ITEM_FILE="$BUILD_DIR/appcast-item.xml"
+PUB_DATE="$(LC_TIME=C date -u +"%a, %d %b %Y %H:%M:%S %z")"
+cat > "$ITEM_FILE" <<EOF
+    <item>
+      <title>Readly $VERSION</title>
+      <pubDate>$PUB_DATE</pubDate>
+      <sparkle:version>$BUILD_NUMBER</sparkle:version>
+      <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+      <enclosure
+        url="https://github.com/mberrishdev/Readly/releases/download/$TAG/Readly-$VERSION.dmg"
+        type="application/octet-stream"
+        $SIGNATURE_ATTRS />
+    </item>
+EOF
+MARKER="<!-- scripts/release.sh inserts new <item> entries directly below this line, newest first -->"
+grep -qF "$MARKER" appcast.xml || fail "appcast.xml is missing the release.sh insertion marker"
+/usr/bin/sed -i '' "\\@$MARKER@r $ITEM_FILE" appcast.xml
+rm -f "$ITEM_FILE"
+echo "  prepended the $VERSION entry"
+
+# ----------------------------------------------------------------- publish
+
+step "Committing and tagging"
+git add "$PBXPROJ" appcast.xml Casks/readly.rb
+if git diff --cached --quiet; then
+  echo "  nothing staged — version already matches"
+else
+  git commit -q -m "Release $VERSION"
+  echo "  committed the version bump"
+fi
+git tag -a "$TAG" -m "Readly $VERSION"
+git push -q origin main
+git push -q origin "$TAG"
+echo "  pushed $TAG"
+
+step "Publishing the GitHub release"
+NOTES_FILE="$BUILD_DIR/notes.md"
+PREV_TAG="$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)"
+{
+  echo "## Install"
+  echo
+  echo "### Homebrew"
+  echo '```'
+  echo "brew tap mberrishdev/readly https://github.com/mberrishdev/Readly"
+  echo "brew trust --tap mberrishdev/readly"
+  echo "brew install --cask readly"
+  echo '```'
+  echo
+  echo "### Manual"
+  echo
+  echo "Download **Readly-$VERSION.dmg** below, drag Readly into Applications."
+  echo
+  echo "This build is ad-hoc signed (no Apple Developer ID yet), so on first"
+  echo "launch macOS will say it's damaged and can't be opened. Clear the"
+  echo "quarantine flag instead of trusting Gatekeeper's own bypass hint —"
+  echo "right-click -> Open doesn't work here:"
+  echo '```'
+  echo "xattr -cr /Applications/Readly.app"
+  echo '```'
+  echo
+  echo "## Changes"
+  echo
+  if [[ -n "$PREV_TAG" ]]; then
+    git log --no-merges --pretty='- %s' "$PREV_TAG..$TAG"
+  else
+    git log --no-merges --pretty='- %s' -20 "$TAG"
+  fi
+} > "$NOTES_FILE"
+
+gh release create "$TAG" "$DMG" \
+  --title "Readly $VERSION" \
+  --notes-file "$NOTES_FILE"
+
+step "Done"
+echo "  release: $(gh release view "$TAG" --json url -q .url)"

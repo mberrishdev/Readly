@@ -2,5 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Sparkle.framework ships pre-signed with its own real Developer ID
+	     Team ID. Readly is ad-hoc signed (no Team ID of its own — see
+	     docs/ProjectSettings.md), and Hardened Runtime's Library Validation
+	     refuses to load a framework signed by a different team unless this
+	     is disabled. Without it dyld aborts on launch: "code signature ...
+	     not valid for use in process: mapping process and mapped file
+	     (non-platform) have different Team IDs". -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
 </dict>
 </plist>

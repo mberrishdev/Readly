@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var settingsWindowController: SettingsWindowController?
   private var onboardingWindowController: OnboardingWindowController?
   private let permissions: PermissionsManaging = PermissionsManager()
+  private let updaterService = SparkleUpdaterService()
 
   static func main() {
     let application = NSApplication.shared
@@ -55,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       captureText: { hotkeyManager.onTrigger?() },
       openSettings: { [weak self] in self?.showSettings() },
       openOnboarding: { [weak self] in self?.showOnboarding() },
+      checkForUpdates: { [weak self] in self?.updaterService.checkForUpdates() },
       hasScreenRecordingAccess: { [weak self] in self?.permissions.hasScreenRecordingAccess ?? false }
     )
     self.statusMenuController = statusMenuController
@@ -65,12 +67,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     if !permissions.hasScreenRecordingAccess {
       showOnboarding()
     }
+
+    // Last: a scheduled check can show a window, and it must never land
+    // before the status item is wired.
+    updaterService.start()
   }
 
   private func showSettings() {
     guard let settings else { return }
     if settingsWindowController == nil {
-      settingsWindowController = SettingsWindowController(settings: settings)
+      settingsWindowController = SettingsWindowController(settings: settings, updater: updaterService)
     }
     settingsWindowController?.show()
   }

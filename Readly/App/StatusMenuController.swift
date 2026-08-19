@@ -10,6 +10,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
   private let captureText: () -> Void
   private let openSettings: () -> Void
   private let openOnboarding: () -> Void
+  private let checkForUpdates: () -> Void
   private let hasScreenRecordingAccess: () -> Bool
 
   private let accessItem: NSMenuItem
@@ -19,11 +20,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     captureText: @escaping () -> Void,
     openSettings: @escaping () -> Void,
     openOnboarding: @escaping () -> Void,
+    checkForUpdates: @escaping () -> Void,
     hasScreenRecordingAccess: @escaping () -> Bool
   ) {
     self.captureText = captureText
     self.openSettings = openSettings
     self.openOnboarding = openOnboarding
+    self.checkForUpdates = checkForUpdates
     self.hasScreenRecordingAccess = hasScreenRecordingAccess
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     accessItem = NSMenuItem(
@@ -63,6 +66,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     settingsItem.target = self
     menu.addItem(settingsItem)
 
+    let updatesItem = NSMenuItem(
+      title: "Check for Updates…",
+      action: #selector(checkForUpdatesItem),
+      keyEquivalent: ""
+    )
+    updatesItem.target = self
+    menu.addItem(updatesItem)
+
     menu.addItem(NSMenuItem(
       title: "Quit Readly",
       action: #selector(NSApplication.terminate(_:)),
@@ -97,5 +108,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
   @objc private func openOnboardingItem() {
     openOnboarding()
+  }
+
+  @objc private func checkForUpdatesItem() {
+    checkForUpdates()
   }
 }

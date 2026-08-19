@@ -138,14 +138,20 @@ if ! $DRY_RUN; then
   echo "  reports $BUILT_SHORT ($BUILT_BUILD)"
 fi
 
-# Ad-hoc sign if the archive came out unsigned, so Gatekeeper's message is
-# "unidentified developer" rather than "damaged". Readly has no Developer ID
-# yet — this is the whole signing story for now.
-if ! codesign -dv "$APP" >/dev/null 2>&1; then
-  step "Ad-hoc signing (no Developer ID in this build)"
-  codesign --force --deep --sign - "$APP"
-fi
+# Always re-sign the whole bundle, even though `codesign -dv` already finds
+# a signature at this point. Xcode's linker applies an automatic ad-hoc
+# signature to the raw executable even with CODE_SIGNING_ALLOWED=NO, which
+# makes the app *look* signed — but that signature only covers the binary,
+# not the full bundle (Info.plist, Resources). Trusting it and skipping the
+# real signing step here once shipped an update Sparkle's own code-signing
+# check rejected outright ("code has no resources but signature indicates
+# they must be present"). Readly has no Developer ID yet — full ad-hoc
+# signing is the whole signing story for now, but it has to be real.
+step "Ad-hoc signing (no Developer ID in this build)"
+codesign --force --deep --sign - "$APP"
 codesign -dv "$APP" 2>&1 | grep -E "Authority|Signature" | sed 's/^/  /' || true
+codesign --verify --deep --strict "$APP" \
+  || fail "the signed app failed its own codesign --verify — Sparkle would reject this update"
 
 # --------------------------------------------------------------------- dmg
 

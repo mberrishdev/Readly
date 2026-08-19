@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Readly's own release feed, consumed by the Sparkle framework for
+  self-updates. Readly ships no server, so this is a static file Sparkle
+  fetches and verifies directly — see CONTEXT.md.
+
+  scripts/release.sh prepends a new <item> here on every release cut; do not
+  hand-edit except to fix a mistake in the most recent entry.
+-->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Readly</title>
+    <link>https://raw.githubusercontent.com/mberrishdev/Readly/main/appcast.xml</link>
+    <description>Readly release updates</description>
+    <language>en</language>
+    <!-- scripts/release.sh inserts new <item> entries directly below this line, newest first -->
+  </channel>
+</rss>

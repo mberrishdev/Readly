@@ -176,7 +176,7 @@ private struct SettingsContent: View {
 
         switch section {
         case .general:
-          GeneralSettingsView(settings: settings)
+          GeneralSettingsView(settings: settings, updater: updater)
         case .shortcut:
           ShortcutSettingsView()
         case .recognition:

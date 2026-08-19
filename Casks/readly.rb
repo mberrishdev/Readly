@@ -1,8 +1,8 @@
 cask "readly" do
-  version "0.1.0"
+  version "0.1.1"
   # Placeholder until the first real release — scripts/release.sh overwrites
   # this with the actual DMG's sha256 on every release cut.
-  sha256 "42890201ca3893cb3aca58b582a4632f9390d49d15addc1095e30604d5661f56"
+  sha256 "1b87d7f72a7e9d20305522e9864f0c51ee9ffa5fb7886f0120f593673905d802"
 
   url "https://github.com/mberrishdev/Readly/releases/download/v#{version}/Readly-#{version}.dmg",
       verified: "github.com/mberrishdev/Readly/"

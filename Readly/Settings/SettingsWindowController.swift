@@ -16,7 +16,7 @@ final class SettingsWindowController: NSWindowController {
   private static let windowSize = NSSize(width: 680, height: 460)
   private var hasPositionedWindow = false
 
-  convenience init(settings: SettingsStore) {
+  convenience init(settings: SettingsStore, updater: SparkleUpdaterService) {
     let window = ReadlySettingsWindow(
       contentRect: NSRect(origin: .zero, size: Self.windowSize),
       styleMask: [.borderless],
@@ -24,7 +24,11 @@ final class SettingsWindowController: NSWindowController {
       defer: false
     )
     let hosting = NSHostingController(
-      rootView: SettingsView(settings: settings, onClose: { [weak window] in window?.close() })
+      rootView: SettingsView(
+        settings: settings,
+        updater: updater,
+        onClose: { [weak window] in window?.close() }
+      )
     )
 
     window.contentViewController = hosting

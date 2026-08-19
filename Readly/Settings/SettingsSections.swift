@@ -5,6 +5,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
   case shortcut
   case recognition
   case sounds
+  case updates
 
   var id: Self { self }
 
@@ -14,6 +15,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case .shortcut: "Shortcut"
     case .recognition: "Recognition"
     case .sounds: "Sounds"
+    case .updates: "Updates"
     }
   }
 
@@ -23,6 +25,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case .shortcut: "The key that opens the selection overlay"
     case .recognition: "How Vision reads the text you select"
     case .sounds: "Feedback when a capture finishes"
+    case .updates: "Keep Readly current"
     }
   }
 
@@ -32,6 +35,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case .shortcut: "keyboard"
     case .recognition: "text.viewfinder"
     case .sounds: "speaker.wave.2"
+    case .updates: "arrow.down.circle"
     }
   }
 }

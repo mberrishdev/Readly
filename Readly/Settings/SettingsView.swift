@@ -5,6 +5,7 @@ import SwiftUI
 /// `Form` window.
 struct SettingsView: View {
   @Bindable var settings: SettingsStore
+  let updater: SparkleUpdaterService
   let onClose: () -> Void
 
   @Environment(\.colorSchemeContrast) private var contrast
@@ -23,7 +24,7 @@ struct SettingsView: View {
           .fill(.white.opacity(contrast == .increased ? 0.18 : 0.08))
           .frame(width: 1)
 
-        SettingsContent(section: selectedSection, settings: settings)
+        SettingsContent(section: selectedSection, settings: settings, updater: updater)
           .id(selectedSection)
           .transition(.opacity)
           .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: selectedSection)
@@ -158,6 +159,7 @@ private struct SettingsSidebar: View {
 private struct SettingsContent: View {
   let section: SettingsSection
   @Bindable var settings: SettingsStore
+  let updater: SparkleUpdaterService
 
   @Environment(\.colorSchemeContrast) private var contrast
 
@@ -181,6 +183,8 @@ private struct SettingsContent: View {
           RecognitionSettingsView(settings: settings)
         case .sounds:
           SoundsSettingsView(settings: settings)
+        case .updates:
+          UpdatesSettingsView(updater: updater)
         }
       }
       .frame(maxWidth: 440, alignment: .leading)
@@ -192,5 +196,9 @@ private struct SettingsContent: View {
 }
 
 #Preview {
-  SettingsView(settings: SettingsStore(defaults: UserDefaults(suiteName: "preview")!), onClose: {})
+  SettingsView(
+    settings: SettingsStore(defaults: UserDefaults(suiteName: "preview")!),
+    updater: SparkleUpdaterService(),
+    onClose: {}
+  )
 }
